@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WORLD ONE</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#050B2E;--blue:#1E6BFF;--sky:#5CC8FF;--gold:#FFC83D;--white:#F5F8FF}
+*{box-sizing:border-box}
+body{margin:0;font-family:Poppins,system-ui,sans-serif;color:var(--white);background:radial-gradient(120% 70% at 50% 0%,#12307F,var(--navy) 60%);min-height:100vh;display:flex;justify-content:center;padding:0 18px}
+.wrap{width:100%;max-width:420px;padding:24px 0 40px}
+.logo{display:block;width:min(70vw,280px);margin:0 auto;border-radius:28px;box-shadow:0 0 40px rgba(30,107,255,.55)}
+.tag{text-align:center;color:var(--gold);font-weight:600;font-size:14px;margin:14px 0 22px}
+.card{background:rgba(10,20,80,.72);border:1px solid rgba(92,200,255,.35);border-radius:22px;padding:18px}
+.tabs{display:flex;gap:6px;background:var(--navy);border-radius:14px;padding:4px;margin-bottom:16px}
+.tabs button{flex:1;border:0;border-radius:11px;padding:11px;font:600 15px Poppins,sans-serif;color:var(--white);background:transparent}
+.tabs button.on{background:var(--blue)}
+label{display:block;font-size:13px;margin:12px 0 6px;color:#B9CBFF}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid #2B4AA8;background:var(--navy);color:var(--white);font:16px Poppins,sans-serif}
+.go{width:100%;margin-top:18px;padding:15px;border:0;border-radius:14px;background:var(--gold);color:#1B1400;font:700 16px Poppins,sans-serif}
+.go:disabled{opacity:.6}
+.msg{min-height:20px;margin-top:12px;font-size:14px}
+.err{color:#FF7A7A}.ok{color:#7DFFB0}
+.hello{text-align:center}
+.hello p{color:#B9CBFF;word-break:break-all}
+.out{margin-top:8px;background:transparent;color:var(--white);border:1px solid var(--sky);border-radius:14px;padding:13px 22px;font:600 15px Poppins,sans-serif}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+<img class="logo" alt="AI World One" src="logo.png">
+<p class="tag">One World, One App, Everything Together</p>
+<section class="card" id="authCard">
+<div class="tabs">
+<button id="tabUp" class="on" type="button">Sign up</button>
+<button id="tabIn" type="button">Log in</button>
+</div>
+<label for="email">Email</label>
+<input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+<label for="pw">Password</label>
+<input id="pw" type="password" placeholder="At least 6 characters">
+<button class="go" id="go" type="button">Create account</button>
+<div class="msg" id="msg"></div>
+</section>
+<section class="card hello hide" id="homeCard">
+<h2>Welcome to WORLD ONE</h2>
+<p id="who"></p>
+<button class="out" id="out" type="button">Log out</button>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb=window.supabase.createClient("https://sardgnjbnmecghalgkut.supabase.co","sb_publishable__gE3FsNt17d9zeAFB2kB6w_g3hrQnRi");
+const $=id=>document.getElementById(id);
+let mode="up";
+function say(t,c){$("msg").textContent=t;$("msg").className="msg "+(c||"")}
+function setMode(m){mode=m;$("tabUp").classList.toggle("on",m==="up");$("tabIn").classList.toggle("on",m==="in");$("go").textContent=m==="up"?"Create account":"Log in";say("")}
+function show(u){$("authCard").classList.toggle("hide",!!u);$("homeCard").classList.toggle("hide",!u);if(u)$("who").textContent="Signed in as "+u.email}
+$("tabUp").onclick=()=>setMode("up");
+$("tabIn").onclick=()=>setMode("in");
+$("go").onclick=async()=>{
+const email=$("email").value.trim(),password=$("pw").value;
+if(!email||password.length<6){say("Enter your email and a password of at least 6 characters.","err");return}
+$("go").disabled=true;say("Please wait…");
+try{
+if(mode==="up"){
+const {data,error}=await sb.auth.signUp({email,password});
+if(error)throw error;
+if(data.session)show(data.user);else say("Account created. Check your email, tap the confirmation link, then log in.","ok");
+}else{
+const {data,error}=await sb.auth.signInWithPassword({email,password});
+if(error)throw error;show(data.user);
+}
+}catch(e){say(e.message||"Something went wrong. Try again.","err")}
+$("go").disabled=false;
+};
+$("out").onclick=async()=>{await sb.auth.signOut();show(null);setMode("in")};
+sb.auth.getSession().then(({data})=>show(data.session?data.session.user:null));
+</script>
+</body>
+</html>
